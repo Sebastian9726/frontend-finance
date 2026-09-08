@@ -1,0 +1,7 @@
+# pnpm 11 lee su configuracion desde aqui, ya no desde el campo "pnpm" del
+# package.json.
+#
+# esbuild necesita su script de instalacion para enlazar el binario nativo de
+# la plataforma; sin el, Vite no arranca.
+allowBuilds:
+  esbuild: true
