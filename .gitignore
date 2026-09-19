@@ -1,0 +1,31 @@
+# Node (pnpm)
+node_modules/
+dist/
+.vite/
+.pnpm-store/
+*.local
+# El lockfile de pnpm SI se commitea; los de npm/yarn no deben existir.
+package-lock.json
+yarn.lock
+
+# Artefactos de compilacion de TypeScript
+*.tsbuildinfo
+
+# Entorno
+.env
+.env.*
+!.env.example
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Playwright MCP
+.playwright-mcp/
+
+# Notas personales de trabajo (no son del proyecto).
+# El patron va con comodin: "notas" a secas solo tapa un archivo o carpeta
+# llamado exactamente asi, y dejaba pasar notas.txt.
+notas*
