@@ -4,6 +4,7 @@ import { AuthPage } from '@/features/auth/AuthPage'
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext'
 import { CategoriesPage } from '@/features/categories/CategoriesPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { NetWorthPage } from '@/features/networth/NetWorthPage'
 import { TransactionsPage } from '@/features/transactions/TransactionsPage'
 import { AppShell, PantallaCargando } from '@/routes/AppShell'
 
@@ -36,6 +37,7 @@ export function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/patrimonio" element={<NetWorthPage />} />
             <Route path="/transacciones" element={<TransactionsPage />} />
             <Route path="/cuentas" element={<AccountsPage />} />
             <Route path="/categorias" element={<CategoriesPage />} />

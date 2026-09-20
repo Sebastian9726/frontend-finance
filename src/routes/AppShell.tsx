@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Scale,
   Tags,
   Wallet,
   X,
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils'
 
 const NAVEGACION = [
   { a: '/', etiqueta: 'Tablero', Icono: LayoutDashboard },
+  { a: '/patrimonio', etiqueta: 'Patrimonio', Icono: Scale },
   { a: '/transacciones', etiqueta: 'Movimientos', Icono: ArrowLeftRight },
   { a: '/cuentas', etiqueta: 'Cuentas', Icono: Wallet },
   { a: '/categorias', etiqueta: 'Categorías', Icono: Tags },

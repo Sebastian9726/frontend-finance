@@ -31,6 +31,7 @@ import {
 import { useAuth } from '@/features/auth/AuthContext'
 import { useByCategory, useCashflow, useSummary, useTransactions } from '@/hooks/useFinance'
 import { mensajeDeError } from '@/lib/api'
+import { compacto } from '@/lib/charts'
 import { RANGOS, type NombreRango, formatearFecha, mesCorto, rangoPorNombre } from '@/lib/dates'
 import { type Currency, format, fromApi } from '@/lib/money'
 
@@ -293,20 +294,4 @@ function Kpi({
 
 function Centro({ children }: { children: React.ReactNode }) {
   return <div className="flex h-[200px] items-center justify-center">{children}</div>
-}
-
-/**
- * Etiquetas cortas para el eje Y ("$ 4,5 M").
- *
- * Solo para el eje: la division por un millon es aproximada y no se usa para
- * ningun calculo, solo para no llenar el eje de ceros.
- */
-function compacto(valor: number, moneda: Currency): string {
-  if (Math.abs(valor) >= 1_000_000) {
-    return `${(valor / 1_000_000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} M`
-  }
-  if (Math.abs(valor) >= 1_000) {
-    return `${(valor / 1_000).toLocaleString('es-CO', { maximumFractionDigits: 0 })} K`
-  }
-  return format(fromApi(String(valor), moneda), { showSymbol: false, decimals: 0 })
 }

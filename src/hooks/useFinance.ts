@@ -5,13 +5,21 @@ import { api } from '@/lib/api'
 import type { Rango } from '@/lib/dates'
 import type {
   Account,
+  Asset,
+  AssetDetail,
+  Balance,
   CashflowPoint,
   Category,
   CategoryBreakdown,
   DashboardSummary,
   ExchangeRate,
+  Liability,
+  LiabilityDetail,
+  NetWorthComposition,
+  NetWorthSeries,
   Page,
   Transaction,
+  Valuation,
 } from '@/lib/types'
 
 // Las claves se centralizan para que invalidar sea inequivoco: un literal
@@ -26,6 +34,12 @@ export const claves = {
   porCategoria: (rango: Rango, tipo: string) =>
     ['reports', 'by-category', rango, tipo] as const,
   tasas: ['exchange-rates'] as const,
+  activos: ['assets'] as const,
+  activo: (id: string) => ['assets', id] as const,
+  deudas: ['liabilities'] as const,
+  deuda: (id: string) => ['liabilities', id] as const,
+  serie: (rango: Rango) => ['networth', 'series', rango] as const,
+  composicion: ['networth', 'composition'] as const,
 }
 
 /** Todo lo que cambia al crear, editar o borrar un movimiento. */
@@ -219,6 +233,171 @@ export function useUpsertExchangeRate() {
       queryClient.invalidateQueries({ queryKey: claves.tasas })
       // El saldo consolidado se calcula con la tasa: cambiarla lo mueve.
       queryClient.invalidateQueries({ queryKey: ['reports'] })
+      // Y el patrimonio tambien: los snapshots que se calcularon con una tasa
+      // estimada pueden rehacerse ahora con la tasa real.
+      queryClient.invalidateQueries({ queryKey: ['networth'] })
     },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Patrimonio
+// ---------------------------------------------------------------------------
+
+/**
+ * Toda mutacion de activos o deudas rehace la serie de patrimonio en el
+ * backend, asi que en el frontend hay que invalidar las tres cosas juntas. Se
+ * centraliza aqui para que no se olvide una: la grafica se quedaria mostrando
+ * el patrimonio de antes del cambio, sin que nada falle a la vista.
+ */
+function invalidarTrasPatrimonio(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: claves.activos })
+  queryClient.invalidateQueries({ queryKey: claves.deudas })
+  queryClient.invalidateQueries({ queryKey: ['networth'] })
+}
+
+export function useAssets() {
+  return useQuery({
+    queryKey: claves.activos,
+    queryFn: async () => (await api.get<Asset[]>('/assets')).data,
+  })
+}
+
+export function useAsset(id: string | null) {
+  return useQuery({
+    queryKey: claves.activo(id ?? ''),
+    queryFn: async () => (await api.get<AssetDetail>(`/assets/${id}`)).data,
+    enabled: id !== null,
+  })
+}
+
+export function useCreateAsset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) =>
+      (await api.post<AssetDetail>('/assets', datos)).data,
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useUpdateAsset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.patch<AssetDetail>(`/assets/${id}`, datos)).data,
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useDeleteAsset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => api.delete(`/assets/${id}`),
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useAddValuation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.post<Valuation>(`/assets/${id}/valuations`, datos)).data,
+    onSuccess: (_datos, variables) => {
+      invalidarTrasPatrimonio(queryClient)
+      queryClient.invalidateQueries({ queryKey: claves.activo(variables.id) })
+    },
+  })
+}
+
+export function useDeleteValuation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, valuationId }: { id: string; valuationId: string }) =>
+      api.delete(`/assets/${id}/valuations/${valuationId}`),
+    onSuccess: (_datos, variables) => {
+      invalidarTrasPatrimonio(queryClient)
+      queryClient.invalidateQueries({ queryKey: claves.activo(variables.id) })
+    },
+  })
+}
+
+export function useLiabilities() {
+  return useQuery({
+    queryKey: claves.deudas,
+    queryFn: async () => (await api.get<Liability[]>('/liabilities')).data,
+  })
+}
+
+export function useLiability(id: string | null) {
+  return useQuery({
+    queryKey: claves.deuda(id ?? ''),
+    queryFn: async () => (await api.get<LiabilityDetail>(`/liabilities/${id}`)).data,
+    enabled: id !== null,
+  })
+}
+
+export function useCreateLiability() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) =>
+      (await api.post<LiabilityDetail>('/liabilities', datos)).data,
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useUpdateLiability() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.patch<LiabilityDetail>(`/liabilities/${id}`, datos)).data,
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useDeleteLiability() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => api.delete(`/liabilities/${id}`),
+    onSuccess: () => invalidarTrasPatrimonio(queryClient),
+  })
+}
+
+export function useAddBalance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.post<Balance>(`/liabilities/${id}/balances`, datos)).data,
+    onSuccess: (_datos, variables) => {
+      invalidarTrasPatrimonio(queryClient)
+      queryClient.invalidateQueries({ queryKey: claves.deuda(variables.id) })
+    },
+  })
+}
+
+export function useDeleteBalance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, balanceId }: { id: string; balanceId: string }) =>
+      api.delete(`/liabilities/${id}/balances/${balanceId}`),
+    onSuccess: (_datos, variables) => {
+      invalidarTrasPatrimonio(queryClient)
+      queryClient.invalidateQueries({ queryKey: claves.deuda(variables.id) })
+    },
+  })
+}
+
+export function useNetWorthSeries(rango: Rango) {
+  return useQuery({
+    queryKey: claves.serie(rango),
+    queryFn: async () =>
+      (await api.get<NetWorthSeries>('/networth/series', { params: rango })).data,
+  })
+}
+
+export function useNetWorthComposition() {
+  return useQuery({
+    queryKey: claves.composicion,
+    queryFn: async () =>
+      (await api.get<NetWorthComposition>('/networth/composition')).data,
   })
 }

@@ -131,3 +131,125 @@ export const ACCOUNT_TYPE_LABEL: Record<AccountType, string> = {
   tarjeta_credito: 'Tarjeta de crédito',
   inversion: 'Inversión',
 }
+
+// ---------------------------------------------------------------------------
+// Patrimonio
+// ---------------------------------------------------------------------------
+
+export type AssetType = 'inmueble' | 'vehiculo' | 'inversion' | 'ahorro' | 'otro'
+export type LiabilityType = 'hipoteca' | 'vehiculo' | 'tarjeta' | 'personal' | 'otro'
+
+export interface Valuation {
+  id: string
+  fecha: string
+  valor: MoneyString
+  nota: string | null
+}
+
+export interface Asset {
+  id: string
+  nombre: string
+  tipo: AssetType
+  moneda: Currency
+  costo_adquisicion: MoneyString | null
+  fecha_adquisicion: string | null
+  activo: boolean
+  notas: string | null
+  /** Derivado: el valor de la última valuación, no una columna. */
+  valor_actual: MoneyString
+  fecha_valor: string | null
+  /** `null` cuando no se registró costo: sin punto de partida no hay ganancia. */
+  ganancia: MoneyString | null
+}
+
+export interface AssetDetail extends Asset {
+  valuaciones: Valuation[]
+}
+
+export interface Balance {
+  id: string
+  fecha: string
+  saldo: MoneyString
+  nota: string | null
+}
+
+export interface Liability {
+  id: string
+  nombre: string
+  tipo: LiabilityType
+  moneda: Currency
+  principal: MoneyString | null
+  /** Porcentaje anual. No es dinero: es una tasa para mostrar. */
+  tasa_interes: string | null
+  cuota_mensual: MoneyString | null
+  fecha_inicio: string | null
+  fecha_fin: string | null
+  activa: boolean
+  notas: string | null
+  /** Derivado: el último saldo registrado. Va POSITIVO. */
+  saldo_actual: MoneyString
+  fecha_saldo: string | null
+  abonado: MoneyString | null
+}
+
+export interface LiabilityDetail extends Liability {
+  saldos: Balance[]
+}
+
+export interface NetWorthPoint {
+  /** Siempre el último día del mes. */
+  fecha: string
+  total_activos: MoneyString
+  total_pasivos: MoneyString
+  patrimonio_neto: MoneyString
+  /** Alguna conversión de ese mes usó la tasa de un día anterior. */
+  tasa_estimada: boolean
+}
+
+export interface NetWorthSeries {
+  moneda_base: Currency
+  desde: string
+  hasta: string
+  puntos: NetWorthPoint[]
+  variacion: MoneyString
+  variacion_pct: number | null
+}
+
+export interface CompositionItem {
+  id: string
+  nombre: string
+  tipo: string
+  moneda: Currency
+  valor_original: MoneyString
+  valor_base: MoneyString
+  fecha_valor: string | null
+  porcentaje: number
+}
+
+export interface NetWorthComposition {
+  moneda_base: Currency
+  fecha: string
+  total_activos: MoneyString
+  total_pasivos: MoneyString
+  patrimonio_neto: MoneyString
+  activos: CompositionItem[]
+  pasivos: CompositionItem[]
+  tasa_estimada: boolean
+  tasa_usd: string | null
+}
+
+export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
+  inmueble: 'Inmueble',
+  vehiculo: 'Vehículo',
+  inversion: 'Inversión',
+  ahorro: 'Ahorro',
+  otro: 'Otro',
+}
+
+export const LIABILITY_TYPE_LABEL: Record<LiabilityType, string> = {
+  hipoteca: 'Hipoteca',
+  vehiculo: 'Vehículo',
+  tarjeta: 'Tarjeta de crédito',
+  personal: 'Crédito personal',
+  otro: 'Otra',
+}
