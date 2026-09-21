@@ -238,6 +238,97 @@ export interface NetWorthComposition {
   tasa_usd: string | null
 }
 
+// ---------------------------------------------------------------------------
+// Planeación
+// ---------------------------------------------------------------------------
+
+/** Semáforo de un presupuesto. Lo decide el backend: el umbral vive allá. */
+export type BudgetState = 'ok' | 'alerta' | 'excedido'
+
+export interface Budget {
+  id: string
+  category_id: string
+  anio: number
+  mes: number
+  monto_limite: MoneyString
+  /** Porcentaje de ejecución a partir del cual avisa. No es dinero. */
+  alerta_pct: string
+}
+
+export interface BudgetLine {
+  id: string
+  category_id: string
+  categoria: string
+  color: string | null
+  monto_limite: MoneyString
+  ejecutado: MoneyString
+  /** Negativo cuando ya se pasó del límite. */
+  disponible: MoneyString
+  porcentaje: number
+  alerta_pct: string
+  estado: BudgetState
+}
+
+export interface UnbudgetedLine {
+  category_id: string | null
+  categoria: string
+  color: string | null
+  ejecutado: MoneyString
+}
+
+export interface BudgetStatus {
+  moneda_base: Currency
+  anio: number
+  mes: number
+  desde: string
+  hasta: string
+  total_limite: MoneyString
+  total_ejecutado: MoneyString
+  total_disponible: MoneyString
+  total_sin_presupuesto: MoneyString
+  lineas: BudgetLine[]
+  sin_presupuesto: UnbudgetedLine[]
+}
+
+export interface BudgetCopyResult {
+  anio: number
+  mes: number
+  copiados: number
+  omitidos: number
+}
+
+export interface Contribution {
+  id: string
+  fecha: string
+  monto: MoneyString
+  nota: string | null
+}
+
+export interface Goal {
+  id: string
+  nombre: string
+  moneda: Currency
+  monto_objetivo: MoneyString
+  fecha_objetivo: string | null
+  account_id: string | null
+  activa: boolean
+  notas: string | null
+  /** Derivado de los aportes, no una columna. */
+  monto_actual: MoneyString
+  monto_faltante: MoneyString
+  porcentaje: number
+  cumplida: boolean
+  /** `null` mientras no haya historia suficiente para medir un ritmo. */
+  aporte_mensual_promedio: MoneyString | null
+  fecha_proyectada: string | null
+  aporte_mensual_requerido: MoneyString | null
+  en_riesgo: boolean
+}
+
+export interface GoalDetail extends Goal {
+  aportes: Contribution[]
+}
+
 export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
   inmueble: 'Inmueble',
   vehiculo: 'Vehículo',

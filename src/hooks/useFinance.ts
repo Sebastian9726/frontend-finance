@@ -8,11 +8,17 @@ import type {
   Asset,
   AssetDetail,
   Balance,
+  Budget,
+  BudgetCopyResult,
+  BudgetStatus,
   CashflowPoint,
   Category,
   CategoryBreakdown,
+  Contribution,
   DashboardSummary,
   ExchangeRate,
+  Goal,
+  GoalDetail,
   Liability,
   LiabilityDetail,
   NetWorthComposition,
@@ -21,6 +27,12 @@ import type {
   Transaction,
   Valuation,
 } from '@/lib/types'
+
+/** Un mes concreto. Se usa como clave de cache y como params del API. */
+export interface Mes {
+  anio: number
+  mes: number
+}
 
 // Las claves se centralizan para que invalidar sea inequivoco: un literal
 // suelto y mal escrito no invalida nada y la pantalla se queda con datos
@@ -40,6 +52,10 @@ export const claves = {
   deuda: (id: string) => ['liabilities', id] as const,
   serie: (rango: Rango) => ['networth', 'series', rango] as const,
   composicion: ['networth', 'composition'] as const,
+  presupuestos: (mes: Mes) => ['budgets', mes] as const,
+  presupuestoStatus: (mes: Mes) => ['budgets', 'status', mes] as const,
+  metas: ['goals'] as const,
+  meta: (id: string) => ['goals', id] as const,
 }
 
 /** Todo lo que cambia al crear, editar o borrar un movimiento. */
@@ -399,5 +415,134 @@ export function useNetWorthComposition() {
     queryKey: claves.composicion,
     queryFn: async () =>
       (await api.get<NetWorthComposition>('/networth/composition')).data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Presupuestos
+// ---------------------------------------------------------------------------
+
+/**
+ * Cualquier cambio de presupuesto invalida TODO lo que cuelgue de 'budgets',
+ * no solo el mes tocado: copiar al mes siguiente y borrar afectan meses que no
+ * son el que esta en pantalla.
+ */
+function invalidarPresupuestos(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['budgets'] })
+}
+
+export function useBudgets(mes: Mes) {
+  return useQuery({
+    queryKey: claves.presupuestos(mes),
+    queryFn: async () => (await api.get<Budget[]>('/budgets', { params: mes })).data,
+  })
+}
+
+export function useBudgetStatus(mes: Mes) {
+  return useQuery({
+    queryKey: claves.presupuestoStatus(mes),
+    queryFn: async () =>
+      (await api.get<BudgetStatus>('/budgets/status', { params: mes })).data,
+    // Al cambiar de mes se conserva la vista anterior mientras llega la nueva:
+    // sin esto la pantalla parpadea en vacio en cada clic de la flecha.
+    placeholderData: (previo) => previo,
+  })
+}
+
+export function useCreateBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) =>
+      (await api.post<Budget>('/budgets', datos)).data,
+    onSuccess: () => invalidarPresupuestos(queryClient),
+  })
+}
+
+export function useUpdateBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.patch<Budget>(`/budgets/${id}`, datos)).data,
+    onSuccess: () => invalidarPresupuestos(queryClient),
+  })
+}
+
+export function useDeleteBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => api.delete(`/budgets/${id}`),
+    onSuccess: () => invalidarPresupuestos(queryClient),
+  })
+}
+
+export function useCopyBudgets() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (mes: Mes) =>
+      (await api.post<BudgetCopyResult>('/budgets/copy', null, { params: mes })).data,
+    onSuccess: () => invalidarPresupuestos(queryClient),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Metas
+// ---------------------------------------------------------------------------
+
+export function useGoals() {
+  return useQuery({
+    queryKey: claves.metas,
+    queryFn: async () => (await api.get<Goal[]>('/goals')).data,
+  })
+}
+
+export function useGoal(id: string | null) {
+  return useQuery({
+    queryKey: claves.meta(id ?? ''),
+    queryFn: async () => (await api.get<GoalDetail>(`/goals/${id}`)).data,
+    enabled: id !== null,
+  })
+}
+
+export function useCreateGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) =>
+      (await api.post<GoalDetail>('/goals', datos)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  })
+}
+
+export function useUpdateGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.patch<GoalDetail>(`/goals/${id}`, datos)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  })
+}
+
+export function useDeleteGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => api.delete(`/goals/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  })
+}
+
+export function useAddContribution() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...datos }: { id: string } & Record<string, unknown>) =>
+      (await api.post<Contribution>(`/goals/${id}/contributions`, datos)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  })
+}
+
+export function useDeleteContribution() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, contributionId }: { id: string; contributionId: string }) =>
+      api.delete(`/goals/${id}/contributions/${contributionId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   })
 }

@@ -3,8 +3,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PiggyBank,
   Scale,
   Tags,
+  Target,
   Wallet,
   X,
 } from 'lucide-react'
@@ -17,6 +19,8 @@ import { cn } from '@/lib/utils'
 const NAVEGACION = [
   { a: '/', etiqueta: 'Tablero', Icono: LayoutDashboard },
   { a: '/patrimonio', etiqueta: 'Patrimonio', Icono: Scale },
+  { a: '/presupuestos', etiqueta: 'Presupuestos', Icono: PiggyBank },
+  { a: '/metas', etiqueta: 'Metas', Icono: Target },
   { a: '/transacciones', etiqueta: 'Movimientos', Icono: ArrowLeftRight },
   { a: '/cuentas', etiqueta: 'Cuentas', Icono: Wallet },
   { a: '/categorias', etiqueta: 'Categorías', Icono: Tags },

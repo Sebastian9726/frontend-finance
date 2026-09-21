@@ -104,3 +104,39 @@ export const RANGOS: { valor: NombreRango; etiqueta: string; calcular: () => Ran
 export function rangoPorNombre(nombre: NombreRango): Rango {
   return (RANGOS.find((r) => r.valor === nombre) ?? RANGOS[0]!).calcular()
 }
+
+// ---------------------------------------------------------------------------
+// Meses como año + número
+// ---------------------------------------------------------------------------
+
+/**
+ * Un presupuesto no ocurre un día: es el mes entero. Por eso viaja como dos
+ * enteros y no como una fecha, igual que en el backend. Así no hay forma de
+ * compararlo por accidente contra un día suelto.
+ */
+export interface MesNumerico {
+  anio: number
+  mes: number
+}
+
+export function mesActualNumerico(): MesNumerico {
+  const ahora = new Date()
+  return { anio: ahora.getFullYear(), mes: ahora.getMonth() + 1 }
+}
+
+/** Avanza (o retrocede, con `n` negativo) sobre el calendario. */
+export function sumarMeses({ anio, mes }: MesNumerico, n: number): MesNumerico {
+  // Se opera sobre enteros, no sobre un Date: construir uno solo para sumar
+  // meses trae de vuelta las zonas horarias que este módulo evita.
+  const total = anio * 12 + (mes - 1) + n
+  return { anio: Math.floor(total / 12), mes: (total % 12) + 1 }
+}
+
+/** `{ anio: 2026, mes: 6 }` -> "junio 2026" */
+export function etiquetaMes({ anio, mes }: MesNumerico): string {
+  return `${MESES[mes - 1]} ${anio}`
+}
+
+export function mismosMeses(a: MesNumerico, b: MesNumerico): boolean {
+  return a.anio === b.anio && a.mes === b.mes
+}
